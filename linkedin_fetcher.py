@@ -73,22 +73,13 @@ class LinkedInFetcher:
         companies: List[CompanyData] = []
         for item in raw_response:
             company_name = item.get("companyName", "") or item.get("company", "")
-            company_url = item.get("companyUrl", "") or item.get("companyLink", "")
-            linkedin_job_url = item.get("jobUrl", "") or item.get("link", "")
+            company_url = item.get("companyWebsite", "") or item.get("companyUrl", "") or item.get("companyLink", "")
+            linkedin_job_url = item.get("link", "") or item.get("jobUrl", "")
             job_title = item.get("title", "") or item.get("jobTitle", "")
 
             if not company_name or not company_url:
                 self._logger.warning(f"Skipping item with missing data: {item.get('title', 'unknown')}")
                 continue
-
-            # Normalize: extract root domain from LinkedIn company URL if needed
-            if "linkedin.com" in company_url:
-                website = item.get("companyWebsite", "") or item.get("website", "")
-                if website:
-                    company_url = website
-                else:
-                    self._logger.warning(f"No website URL for {company_name}, only LinkedIn profile")
-                    continue
 
             company = CompanyData(
                 company_name=company_name,
@@ -124,10 +115,10 @@ class LinkedInFetcher:
         """Call Apify actor to scrape LinkedIn job listings."""
         client = ApifyClient(self.api_token)
         run_input = {
-            "startUrls": [{"url": linkedin_url}],
+            "urls": [linkedin_url],
             "maxItems": params.get("maxItems", self.max_items),
         }
-        run = client.actor("hMvNSpz3JnHgl5jkh").call(run_input=run_input)
+        run = client.actor("hKByXkMQaC5Qt9UMN").call(run_input=run_input)
         items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
         self.api_calls_made += 1
         return items
